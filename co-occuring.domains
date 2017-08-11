@@ -2,47 +2,49 @@
 
 module load R
 module load emboss
-module load hmmer
 
-## genomes
-mydir=/usit/abel/u1/mortema/genomes/GENOMES
+## hmmdir
 hmmdir=/usit/abel/u1/mortema/genomes/hmm
 
+
+## translate genomes
 GENOMES=*fa*
-
 for f in $GENOMES
-
 do
-
-hmm1=$hmmdir/NACHT.hmm
-hmm2=$hmmdir/CARD.hmm
-fasta=Astyanax_mexicanus.AstMex102.dna.toplevel.fa
-
-transeq -frame 6 $fasta $fasta.6frame
-
-# search with hmmer
-/cluster/software/VERSIONS/hmmer-3.1b1/bin/hmmsearch --noali --tblout hmm1 --domtblout hmm1.dom $hmm1 $fasta.6frame
-/cluster/software/VERSIONS/hmmer-3.1b1/bin/hmmsearch --noali --tblout hmm2 --domtblout hmm2.dom $hmm2 $fasta.6frame
-
-# remove unwanted lines from results file
-sed '/^#/ d' hmm1.dom > tmp
-sed '/^#/ d' hmm2.dom > tmp2
-
-# calculate domain coverage and remove below 75%. Print ID, start and coverage and count lines
-awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp | awk ' $3 >= 75 ' > la1
-awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp2 | awk ' $3 >= 75 ' > la2
-
-
-awk '{print $1}' la1 >id1
-awk '{print $1}' la2 >id2
-
-
-# for each line in co-occurence calculate distance to co-occuring domain (do this in R) and count number of co-occuring domains
-R CMD BATCH co-domain.R
-cat co-domain.out >results/$fasta.done
-echo "Done Processing $fasta"
-
-rm *6frame
-rm la*
-rm tmp*
+	transeq -frame 6 -clean $f $f.6frame
 done
+
+## search translations
+frames=*6frame
+for f in $frames
+	do
+	hmm1=NACHT.hmm
+	hmm2=CARD.hmm
+	hmm3=pyrin.hmm
+	hmm4=b30.2.hmm
+	
+	fasta=$f
+
+	# search with hmmer
+	~/software/bin/bin/hmmsearch --noali --tblout hmm1 --domtblout hmm1.dom $hmmdir/$hmm1 $fasta
+	~/software/bin/bin/hmmsearch --noali --tblout hmm2 --domtblout hmm2.dom $hmmdir/$hmm2 $fasta
+
+	# remove unwanted lines from results file
+	sed '/^#/ d' hmm1.dom > tmp
+	sed '/^#/ d' hmm2.dom > tmp2
+
+	# calculate domain coverage and remove below 75%. Print ID, start and coverage and count lines
+	# awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp | awk ' $3 >= 75 ' > la1
+	# awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp2 | awk ' $3 >= 75 ' > la2
+
+	R CMD BATCH co-domain2.R
+
+	# cat co-domain.out >results/$fasta.done
+	
+	wc -l tmp>$hmm1 && wc -l tmp2>$hmm2 && cat co-domain.out >co-domain
+	paste $hmm1 $hmm2 co-domain >results/$fasta.done
+	
+	echo "Done Processing $fasta"
+
+done
+

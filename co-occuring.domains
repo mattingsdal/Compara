@@ -48,3 +48,17 @@ for f in $frames
 
 done
 
+
+
+
+### single domain search
+frames=*6frame
+hmmdir=/usit/abel/u1/mortema/genomes/hmm
+hmm=INF_GTPase.hmm
+for f in $frames
+	do
+	~/software/bin/bin/hmmsearch --noali --tblout hmm1 --domtblout hmm1.dom $hmmdir/$hmm $f
+	sed '/^#/ d' hmm1.dom > results/$f.single
+done
+
+

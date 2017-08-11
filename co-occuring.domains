@@ -8,10 +8,11 @@ hmmdir=/usit/abel/u1/mortema/genomes/hmm
 
 
 ## translate genomes
-GENOMES=*fa*
+GENOMES=*fa
 for f in $GENOMES
 do
 	transeq -frame 6 -clean $f $f.6frame
+	getorf -minsize 60 -sequence $f -outseq $f.orf
 done
 
 ## search translations

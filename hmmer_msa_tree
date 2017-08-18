@@ -1,0 +1,30 @@
+module load python 
+module load muscle
+hmm=NACHT.hmm
+#####
+#####	search with hmmer
+#####
+
+
+# 
+
+
+for i in Oreochromis berggylt Oryzias Symphodus Tetraodon Gadus
+do
+~/software/bin/bin/hmmsearch -A $hmm.$i.msa --domE 1e-5 --domtblout $hmm.$i.dom  ../hmm/$hmm $i*.orf
+~/software/hmmer-3.1b2-linux-intel-x86_64/binaries/esl-reformat --informat stockholm fasta $hmm.$i.msa >$hmm.$i.msa.fasta
+
+sed '/^#/ d' $hmm.$i.dom | cat >$hmm.$i.clean
+awk '(NR==1) || ( ($17-$16)/$6*100 > 95 ) ' $hmm.$i.clean > $hmm.$i.clean.filter
+awk '{print $1}' $hmm.$i.clean.filter>$hmm.$i.clean.filter.id
+
+awk 'BEGIN{FS="/"}{print $1}' $hmm.$i.msa.fasta >id3
+samtools faidx id3
+xargs samtools faidx id3 < $hmm.$i.clean.filter.id >$hmm.$i.fasta.filter
+sed -i "s/>/>${i}_/g" "$hmm.$i.fasta.filter"
+done
+
+cat *fasta.filter >$hmm.tcoffee.fasta
+
+~/software/T-COFFEE_installer_Version_11.00.8cbe486_linux_x64/bin/t_coffee $hmm.tcoffee.fasta
+muscle -in $hmm.tcoffee.fasta -out $hmm.muscle.fasta -tree1 tree.phy

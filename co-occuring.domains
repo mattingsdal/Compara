@@ -15,51 +15,37 @@ do
 	getorf -minsize 60 -sequence $f -outseq $f.orf
 done
 
-## search translations
-frames=*6frame
-for f in $frames
-	do
-	hmm1=NACHT.hmm
-	hmm2=CARD.hmm
-	hmm3=pyrin.hmm
-	hmm4=b30.2.hmm
-	
-	fasta=$f
+### split genome into chuncks
 
-	# search with hmmer
-	~/software/bin/bin/hmmsearch --noali --tblout hmm1 --domtblout hmm1.dom $hmmdir/$hmm1 $fasta
-	~/software/bin/bin/hmmsearch --noali --tblout hmm2 --domtblout hmm2.dom $hmmdir/$hmm2 $fasta
+for i in berggylt Gadus Gasterosteus Oreochromis Oryzias Poecilia Symphodus Tetraodon Xiphophorus
+perl fasta-splitter.pl --n-parts 40 $i*6frame --out-dir split_orf/
+done
 
-	# remove unwanted lines from results file
-	sed '/^#/ d' hmm1.dom > tmp
-	sed '/^#/ d' hmm2.dom > tmp2
+## search each chunk with eukaryotic hmm database
 
-	# calculate domain coverage and remove below 75%. Print ID, start and coverage and count lines
-	# awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp | awk ' $3 >= 75 ' > la1
-	# awk '{print $1"\t"$18"\t"($17-$16)/$6*100}' tmp2 | awk ' $3 >= 75 ' > la2
+module load gnu_parallel
 
-	R CMD BATCH co-domain2.R
+function hmmer() {
+    n=$(basename "$1")
+    ~/software/bin/bin/hmmsearch --noali --tblout $1.hmm --domtblout $1.hmm.dom --cpu 1 -o $1.output.hmmsearch.txt /usit/abel/u1/mortema/software/interproscan-5.18-57.0/data/pfam/29.0/pfam_a_min2.hmm $1
+}
+export -f hmmer
 
-	# cat co-domain.out >results/$fasta.done
-	
-	wc -l tmp>$hmm1 && wc -l tmp2>$hmm2 && cat co-domain.out >co-domain
-	paste $hmm1 $hmm2 co-domain >results/$fasta.done
-	
-	echo "Done Processing $fasta"
-
+for name in berggylt Gadus Gasterosteus Oreochromis Oryzias Poecilia Symphodus Tetraodon Xiphophorus
+do
+find /usit/abel/u1/mortema/genomes/GENOMES/split -maxdepth 1 -type f -name "${name}*6frame" | parallel -j 40 hmmer {}
 done
 
 
 
-
-### single domain search
-frames=*6frame
-hmmdir=/usit/abel/u1/mortema/genomes/hmm
-hmm=INF_GTPase.hmm
-for f in $frames
-	do
-	~/software/bin/bin/hmmsearch --noali --tblout hmm1 --domtblout hmm1.dom $hmmdir/$hmm $f
-	sed '/^#/ d' hmm1.dom > results/$f.single
+## cat every chunck to a clean file names "all". *single.domans contains the domain count and *sorted contains the domains instances
+for i in Astyanax berggylt Gadus Gasterosteus Oreochromis
+do
+	sed '/^#/ d' $i*dom | cat >$i.clean
+	awk '{print $1"\t"$4"\t"$7"\t"$18"\t"($17-$16)/$6*100}' $i.clean | awk ' $5 >= 75 ' > $i.filter
+	sort -k1,1 -k4,4n $i.filter >$i.sorted
+	awk '{print $2}' $i.sorted | sort | uniq -c >$i.single_domains
 done
+
 
 

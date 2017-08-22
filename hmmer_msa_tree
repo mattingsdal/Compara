@@ -28,3 +28,32 @@ cat *fasta.filter >$hmm.tcoffee.fasta
 
 ~/software/T-COFFEE_installer_Version_11.00.8cbe486_linux_x64/bin/t_coffee $hmm.tcoffee.fasta
 muscle -in $hmm.tcoffee.fasta -out $hmm.muscle.fasta -tree1 tree.phy
+
+
+
+
+### extract DNA sequence from protein domain hits given contig name and coordinates
+### paste relevant contigs into "my_contig" and extract domain hits
+
+grep -f mycontig NACHT.hmm.Symphodus.dom
+
+## extract coordinates from reverse orf
+grep -f mycontig NACHT.hmm.Symphodus.dom | grep REVERSE | awk '{print $1"\t"$25"\t"$23"\treverse\t1\t-"}' | sed 's/\[//g' | sed 's/\]//g' >rev
+## extract coordinates from fwd orf
+grep -f mycontig NACHT.hmm.Symphodus.dom | grep -v REVERSE | awk '{print $1"\t"$23"\t"$25"\tforward\t1\t+"}' | sed 's/\[//g' | sed 's/\]//g' >fwd
+cat fwd rev >coord
+
+## remove underscore for contig name
+awk '{print $1}' coord | sed -r 's/_[0-9]{1,5}$//g' >names1
+paste names1 coord >final
+awk '{print $1"\t"$3"\t"$4"\t"$5"\t"$6"\t"$7}' final >mybed
+
+
+module load bedtools
+fastaFromBed -fi Symphodus_melops.fa -bed mybed -fo out.regions.fa
+
+muscle -in out.regions.fa -out out.regions.muscle
+
+
+
+

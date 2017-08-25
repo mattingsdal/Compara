@@ -1,0 +1,11 @@
+module load blast+
+module load python2
+module load muscle
+module load raxml
+
+
+
+export PYTHONPATH="/usit/abel/u1/mortema/.local/lib/python2.7/site-packages"
+
+cd /usit/abel/u1/mortema/software/OrthoFinder-1.1.8
+./orthofinder -f my_fish -t 32 -a 16 --only-groups

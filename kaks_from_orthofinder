@@ -1,0 +1,37 @@
+## move 1:1 ortologs to a directory
+for file in `cat SingleCopyOrthogroups.txt`; do mv "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/cDNA/single ; done
+
+files=*fa
+
+# clean header files from OrthoFinder, align using default muscle and backtranslate using trimal. the awk line removes one organsim marked with "gi" in fasta header
+for i in $files
+do
+
+sed 's/Gasterosteus_aculeatus_BROADS1_pep_all_ENSGACP/ENSGACT/g' $i >mod.fa
+sed 's/Poecilia_formosa_PoeFor_5_1_2_pep_all_ENSPFOP/ENSPFOT/g' mod.fa  >mod2.fa 
+sed 's/Takifugu_rubripes_FUGU4_pep_all_ENSTRUP/ENSTRUT/g' mod2.fa>mod3.fa 
+sed 's/Xiphophorus_maculatus_Xipmac4_4_2_pep_all_ENSXMAP/ENSXMAT/g' mod3.fa >mod4.fa
+sed 's/S_melops_aed1_pfam_//g' mod4.fa >mod5.fa 
+sed 's/L_bergylta_filtered_//g' mod5.fa >mod6.fa 
+sed 's/Oreochromis_niloticus_Orenil1_0_pep_all_ENSONIP/ENSONIT/g' mod6.fa > mod7.fa
+sed 's/Oryzias_latipes_MEDAKA1_pep_all_ENSORLP/ENSORLT/g' mod7.fa >mod8.fa 
+sed 's/Tetraodon_nigroviridis_TETRAODON8_pep_all_ENSTNIP/ENSTNIT/g' mod8.fa >out.fa
+awk '/^>/ {P=index($0,"gi")==0} {if(P) print} ' out.fa > rdy.fa 
+sed 's/[[:punct:]][0-9]//g' rdy.fa >rdy2.fa
+muscle -in rdy2.fa -out $i.msa
+trimal -in $i.msa -automated1 -ignorestopcodon -backtrans ../myfish.ready.cds.fa -out trimal/$i.trimal
+rm mod*
+
+done
+
+# for each trimal output files calculate kaks using seqinr
+
+
+for i in *trimal
+do
+perl scripts/calculate_kaks.pl --model YN --kaks_calculator /usit/abel/u1/mortema/software/KaKs_Calculator2.0/bin/Linux/KaKs_Calculator $i --outdir results/
+cd results
+awk '$2 == "YN" {print $0}' $i.axt.kaks | grep SYMME | awk '{print $1"\t"$11"\t"$3"\t"$4"\t"$5}' >$i.result
+cd ..
+done
+

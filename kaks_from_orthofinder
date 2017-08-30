@@ -1,11 +1,11 @@
 #####
-##### the below code clean up Orthofinder headers, remove one entry and replaces protein ID with transcript ID, perform aligment and trimms and backtranselates
+##### the below code clean up Orthofinder headers, remove one entry and replaces protein ID with transcript ID, 
+##### perform aligment and trimms and backtranselates
 ##### requires 1 external per script to rename fasta headers
 for file in `cat SingleCopyOrthogroups.txt`; do mv "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/cDNA/single ; done
 
 files=*fa
 
-# clean header files from OrthoFinder, align using default muscle and backtranslate using trimal. the awk line removes one organsim marked with "gi" in fasta header
 for i in $files
 do
 sed 's/Gasterosteus_aculeatus_BROADS1_pep_all_ENSGACP/ENSGACP/g' $i >mod.fa

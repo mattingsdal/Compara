@@ -1,4 +1,6 @@
-## move 1:1 ortologs to a directory
+#####
+##### the below code clean up Orthofinder headers, remove one entry and replaces protein ID with transcript ID, perform aligment and trimms and backtranselates
+##### requires 1 external per script to rename fasta headers
 for file in `cat SingleCopyOrthogroups.txt`; do mv "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/cDNA/single ; done
 
 files=*fa
@@ -6,23 +8,30 @@ files=*fa
 # clean header files from OrthoFinder, align using default muscle and backtranslate using trimal. the awk line removes one organsim marked with "gi" in fasta header
 for i in $files
 do
-
-sed 's/Gasterosteus_aculeatus_BROADS1_pep_all_ENSGACP/ENSGACT/g' $i >mod.fa
-sed 's/Poecilia_formosa_PoeFor_5_1_2_pep_all_ENSPFOP/ENSPFOT/g' mod.fa  >mod2.fa 
-sed 's/Takifugu_rubripes_FUGU4_pep_all_ENSTRUP/ENSTRUT/g' mod2.fa>mod3.fa 
-sed 's/Xiphophorus_maculatus_Xipmac4_4_2_pep_all_ENSXMAP/ENSXMAT/g' mod3.fa >mod4.fa
+sed 's/Gasterosteus_aculeatus_BROADS1_pep_all_ENSGACP/ENSGACP/g' $i >mod.fa
+sed 's/Poecilia_formosa_PoeFor_5_1_2_pep_all_ENSPFOP/ENSPFOP/g' mod.fa  >mod2.fa 
+sed 's/Takifugu_rubripes_FUGU4_pep_all_ENSTRUP/ENSTRUP/g' mod2.fa>mod3.fa 
+sed 's/Xiphophorus_maculatus_Xipmac4_4_2_pep_all_ENSXMAP/ENSXMAP/g' mod3.fa >mod4.fa
 sed 's/S_melops_aed1_pfam_//g' mod4.fa >mod5.fa 
 sed 's/L_bergylta_filtered_//g' mod5.fa >mod6.fa 
-sed 's/Oreochromis_niloticus_Orenil1_0_pep_all_ENSONIP/ENSONIT/g' mod6.fa > mod7.fa
-sed 's/Oryzias_latipes_MEDAKA1_pep_all_ENSORLP/ENSORLT/g' mod7.fa >mod8.fa 
-sed 's/Tetraodon_nigroviridis_TETRAODON8_pep_all_ENSTNIP/ENSTNIT/g' mod8.fa >out.fa
+sed 's/Oreochromis_niloticus_Orenil1_0_pep_all_ENSONIP/ENSONIP/g' mod6.fa > mod7.fa
+sed 's/Oryzias_latipes_MEDAKA1_pep_all_ENSORLP/ENSORLP/g' mod7.fa >mod8.fa 
+sed 's/Tetraodon_nigroviridis_TETRAODON8_pep_all_ENSTNIP/ENSTNIP/g' mod8.fa >out.fa
 awk '/^>/ {P=index($0,"gi")==0} {if(P) print} ' out.fa > rdy.fa 
-sed 's/[[:punct:]][0-9]//g' rdy.fa >rdy2.fa
-muscle -in rdy2.fa -out $i.msa
-trimal -in $i.msa -automated1 -ignorestopcodon -backtrans ../myfish.ready.cds.fa -out trimal/$i.trimal
+
+muscle -in rdy.fa -out $i.msa
 rm mod*
 
+awk 'BEGIN{RS=">"} NR>1 {gsub("\n", "\t"); print ">"$0}' $i.msa  | sort -t $'\t' -k1d,1| awk '{sub("\t", "\n"); gsub("\t", ""); print $0}' > tmp.fa.msa.sort
+grep ">" tmp.fa.msa.sort | sed 's/>//g' >id
+grep -f id ../CONVERT | sort -k 3d,3 >id2
+awk '{print ">"$3}' id2 >id3
+perl rename.pl id3 tmp.fa.msa.sort > $i.msa.cdna
+
+trimal -in $i.msa.cdna -automated1 -ignorestopcodon -backtrans ../myfish.cds.fa -out trimal/$i.trimal
+
 done
+
 
 # for each trimal output files calculate kaks using seqinr
 

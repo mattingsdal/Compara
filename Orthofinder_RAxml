@@ -1,0 +1,25 @@
+awk '{print $1".fa"}' /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/Results_Aug25/WorkingDirectory/SingleCopyOrthogroups_2.txt >myfiles
+
+for file in `cat myfiles` 
+do 
+scp "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/single
+done
+
+
+module load muscle
+for fa in *fa
+do
+muscle -in $fa -out $fa.msa
+done
+
+for msa in *msa
+do
+trimal -in $msa -automated1 -fasta -out $msa.trimal
+done
+
+
+perl catfasta2phyml.pl --verbose *.trimal > out.phy
+
+
+module load raxml
+raxmlHPC-PTHREADS -T 20 -m PROTGAMMAWAG -p 12345 -s OG0012534.fa.phy -# 20 -n out.phy

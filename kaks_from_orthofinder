@@ -40,11 +40,31 @@ perl rename.pl id3 tmp.fa.msa.sort > $i.msa.cdna
 trimal -in $i.msa.cdna -automated1 -ignorestopcodon -backtrans id3.cdna -out trimal/$i.trimal
 done
 
-for i in *trimal
+
+
+###############
+### create prank and trimal scripts
+for e in {3..9}
 do
-prank -codon -d=$i -o=$i.prank
-trimal -in $i.prank.best.fas -nogaps -out $i.done
+echo 'for i in OG000'${e}'*.trimal;do prank -codon -d=$i -o=$i.prank;trimal -in $i.prank.best.fas -nogaps -out $i.done;done' >script$e.script
 done
+for e in {10..14}
+do
+echo 'for i in OG00'${e}'*.trimal;do prank -codon -d=$i -o=$i.prank;trimal -in $i.prank.best.fas -nogaps -out $i.done;done' >script$e.script
+done
+chmod 755 *.script
+###############
+###############
+
+#########
+### submit scripts
+for i in {3..14}
+do
+nohup ./script$i.script &
+done
+#########
+#########
+
 
 
 

@@ -1,8 +1,11 @@
-#####
-##### the below code clean up Orthofinder headers, remove one entry and replaces protein ID with transcript ID, 
-##### perform aligment and trimms and backtranselates
-##### requires 1 external per script to rename fasta headers
-for file in `cat SingleCopyOrthogroups.txt`; do mv "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/cDNA/single ; done
+/usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/Results_Aug25/WorkingDirectory/Orthologues_Aug29/Sequences
+
+awk '{if($2=="1" && $3=="1" && $7=="1" && $8=="1" && $10=="1") print $0}' Orthogroups_2.GeneCount.csv | awk '{print $1".fa"}' >myOG
+awk '{print $1".fa"}' myOG>myfiles
+
+for file in `cat myOG`; do scp "$file" /usit/abel/u1/mortema/software/OrthoFinder-1.1.8/my_fish/kaks2 ; done
+
+
 
 files=*fa
 
@@ -16,31 +19,42 @@ sed 's/S_melops_aed1_pfam_//g' mod4.fa >mod5.fa
 sed 's/L_bergylta_filtered_//g' mod5.fa >mod6.fa 
 sed 's/Oreochromis_niloticus_Orenil1_0_pep_all_ENSONIP/ENSONIP/g' mod6.fa > mod7.fa
 sed 's/Oryzias_latipes_MEDAKA1_pep_all_ENSORLP/ENSORLP/g' mod7.fa >mod8.fa 
-sed 's/Tetraodon_nigroviridis_TETRAODON8_pep_all_ENSTNIP/ENSTNIP/g' mod8.fa >out.fa
-awk '/^>/ {P=index($0,"gi")==0} {if(P) print} ' out.fa > rdy.fa 
+sed 's/Tetraodon_nigroviridis_TETRAODON8_pep_all_ENSTNIP/ENSTNIP/g' mod8.fa >out
+awk '/^>/ {P=index($0,"gi")==0} {if(P) print} ' out > rdy 
 
-muscle -in rdy.fa -out $i.msa
+muscle -in rdy -out $i.msa
 rm mod*
 
-awk 'BEGIN{RS=">"} NR>1 {gsub("\n", "\t"); print ">"$0}' $i.msa  | sort -t $'\t' -k1d,1| awk '{sub("\t", "\n"); gsub("\t", ""); print $0}' > tmp.fa.msa.sort
+awk '/^>/ {P=index($0,"ENSPFOP")==0} {if(P) print} ' $i.msa >tmp
+awk '/^>/ {P=index($0,"ENSXMAP")==0} {if(P) print} ' tmp>tmp2
+awk '/^>/ {P=index($0,"ENSONIP")==0} {if(P) print} ' tmp2>tmp
+awk '/^>/ {P=index($0,"ENSORLP")==0} {if(P) print} ' tmp>tmp2
+awk '/^>/ {P=index($0,"gi")==0} {if(P) print} ' tmp2>$i.msa.pair
+
+awk 'BEGIN{RS=">"} NR>1 {gsub("\n", "\t"); print ">"$0}' $i.msa.pair  | sort -t $'\t' -k1d,1| awk '{sub("\t", "\n"); gsub("\t", ""); print $0}' > tmp.fa.msa.sort
 grep ">" tmp.fa.msa.sort | sed 's/>//g' >id
-grep -f id ../CONVERT | sort -k 3d,3 >id2
+grep -f id ~/software/OrthoFinder-1.1.8/my_fish/cDNA/CONVERT | sort -k 3d,3 >id2
 awk '{print ">"$3}' id2 >id3
+perl ~/MAKER/fastaqual_select.pl -i id3 -f ~/software/OrthoFinder-1.1.8/my_fish/cDNA/my.cDNA >id3.cdna
 perl rename.pl id3 tmp.fa.msa.sort > $i.msa.cdna
-
-trimal -in $i.msa.cdna -automated1 -ignorestopcodon -backtrans ../myfish.cds.fa -out trimal/$i.trimal
-
+trimal -in $i.msa.cdna -automated1 -ignorestopcodon -backtrans id3.cdna -out trimal/$i.trimal
 done
-
-
-# for each trimal output files calculate kaks using seqinr
-
 
 for i in *trimal
 do
-perl scripts/calculate_kaks.pl --model YN --kaks_calculator /usit/abel/u1/mortema/software/KaKs_Calculator2.0/bin/Linux/KaKs_Calculator $i --outdir results/
+prank -codon -d=$i -o=$i.prank
+trimal -in $i.prank.best.fas -nogaps -out $i.done
+done
+
+
+
+
+for i in *done
+do
+perl calculate_kaks.pl --model YN --kaks_calculator /usit/abel/u1/mortema/software/KaKs_Calculator2.0/bin/Linux/KaKs_Calculator $i --outdir results/
 cd results
 awk '$2 == "YN" {print $0}' $i.axt.kaks | grep SYMME | awk '{print $1"\t"$11"\t"$3"\t"$4"\t"$5}' >$i.result
 cd ..
 done
 
+cat *result | awk '{if($5>0.3) print $1"\t"$5}'

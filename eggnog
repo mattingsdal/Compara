@@ -1,0 +1,11 @@
+# eggnog
+
+fasta=L.bergylta_filtered.fa
+fasta=Gasterosteus_aculeatus.BROADS1.pep.all.fa
+fasta=S.melops.aed1.pfam.fa
+
+./emapper.py --usemem --cpu 10 -i ~/software/OrthoFinder-1.1.8/my_fish/$fasta -o $fasta.score.40.eggnog -m diamond --seed_ortholog_score 40
+
+
+./emapper.py --usemem --cpu 10 -i ~/software/OrthoFinder-1.1.8/my_fish/$fasta -o $fasta.score.HMMER -d fiNOG
+

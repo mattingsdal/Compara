@@ -1,0 +1,43 @@
+~/software/RepeatModeler-open-1.0.10/BuildDatabase -name ballan berggylt_V1.fasta
+~/software/RepeatModeler-open-1.0.10/RepeatModeler -database ballan -pa 15
+### wait for 1 day
+
+
+
+ 
+## count 
+~/software/windowmasker/windowmasker -mk_counts -in Symphodus_melops.fasta -out corkwing_counts
+~/software/windowmasker/windowmasker -mk_counts -in berggylt_V1.fasta -out ballan_counts
+
+## ustat
+~/software/windowmasker/windowmasker  -ustat corkwing_counts -in Symphodus_melops.fasta -out corking_mask -outfmt fasta
+~/software/windowmasker/windowmasker  -ustat ballan_counts -in berggylt_V1.fasta -out ballan_mask -outfmt fasta
+
+## replace lowercase to N
+sed -e '/^>/! s/[[:lower:]]/N/g' corking_mask > corkwing.WM.fasta
+sed -e '/^>/! s/[[:lower:]]/N/g' ballan_mask > ballan.WM.fasta
+
+
+
+## transeq
+module load emboss
+
+transeq -sequence Symphodus_melops.fasta -frame 6 -clean -outseq corkwing.fasta.transeq
+transeq -sequence berggylt_V1.fasta -frame 6 -clean -outseq ballan.fasta.transeq
+
+transeq -sequence ballan.WM.fasta -frame 6 -clean -outseq ballan.WM.fasta.transeq
+transeq -sequence corkwing.WM.fasta -frame 6 -clean corkwing.WM.fasta -outseq corkwing.WM.fasta.transeq
+
+transeq -sequence Symphodus_melops.fasta.masked -frame 6 -clean -outseq Symphodus_melops.RM_only.transeq
+
+
+### search with domain
+hmm=NACHT
+~/software/bin/bin/hmmsearch --domE 1e-5 --domtblout $hmm.dom  ~/genomes/hmm/$hmm.hmm Symphodus_melops.RM_only.transeq
+sed '/^#/ d' $hmm.dom | cat >$hmm.clean
+awk '(NR==1) || ( ($17-$16)/$6*100 > 80 ) ' $hmm.clean > $hmm.clean.filter
+wc -l $hmm.clean.filter
+
+
+
+

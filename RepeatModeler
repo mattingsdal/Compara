@@ -1,0 +1,12 @@
+
+
+## RepeatModeler
+
+/usit/abel/u1/mortema/software/RepeatModeler-open-1.0.10/RepeatModeler -database pacbio_tilapia -engine ncbi -pa 20 -recoverDir RM/RM_tilapia/
+/usit/abel/u1/mortema/software/RepeatModeler-open-1.0.10/RepeatModeler -database pacbio_tilapia -engine ncbi -pa 20 -recoverDir RM/RM_tilapia_tmp/
+
+## WindowMasker
+
+## RepeatMasker with taxonomic range
+
+## Repeatmodeler with RepeatModeler results
